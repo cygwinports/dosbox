@@ -1,0 +1,199 @@
+--- origsrc/dosbox-0.74/configure.in	2010-05-10 13:58:57.000000000 -0500
++++ src/dosbox-0.74/configure.in	2013-06-25 15:07:40.972096100 -0500
+@@ -449,7 +449,11 @@ int main(int argc,char * argv[]) {
+ 
+ dnl Some target detection and actions for them
+ case "$host" in
+-    *-*-cygwin* | *-*-mingw32*)
++    *-*-cygwin*)
++       LIBS="$LIBS -lwinmm"
++       AC_DEFINE(C_DIRECTSERIAL, 1, [ Define to 1 if you want serial passthrough support (Win32, Posix and OS/2 only).])
++       ;;
++    *-*-mingw32*)
+        LIBS="$LIBS -lwinmm"
+        AC_CHECK_HEADERS(ddraw.h)
+        AC_DEFINE(C_DIRECTSERIAL, 1, [ Define to 1 if you want serial passthrough support (Win32, Posix and OS/2 only).])
+--- origsrc/dosbox-0.74/include/setup.h	2010-05-10 12:43:54.000000000 -0500
++++ src/dosbox-0.74/include/setup.h	2013-06-25 16:30:48.810384200 -0500
+@@ -26,6 +26,10 @@
+ #pragma warning ( disable : 4290 )
+ #endif
+ 
++#ifndef CH_CSTDIO
++#define CH_CSTDIO
++#include <cstdio>
++#endif
+ 
+ #ifndef CH_LIST
+ #define CH_LIST
+--- origsrc/dosbox-0.74/src/dos/cdrom.cpp	2010-05-10 12:43:54.000000000 -0500
++++ src/dosbox-0.74/src/dos/cdrom.cpp	2013-06-25 15:43:16.760256200 -0500
+@@ -154,7 +154,7 @@ int CDROM_GetMountType(char* path, int f
+ 	const char* cdName;
+ 	char buffer[512];
+ 	strcpy(buffer,path);
+-#if defined (WIN32) || defined(OS2)
++#if defined (WIN32) || defined(OS2) || defined(__CYGWIN__)
+ 	upcase(buffer);
+ #endif
+ 
+--- origsrc/dosbox-0.74/src/dos/cdrom.h	2010-05-10 12:43:54.000000000 -0500
++++ src/dosbox-0.74/src/dos/cdrom.h	2013-06-25 15:36:50.961189800 -0500
+@@ -208,7 +208,7 @@ typedef	std::vector<Track>::iterator	tra
+ 	Bit8u	subUnit;
+ };
+ 
+-#if defined (WIN32)	/* Win 32 */
++#if defined (WIN32) || defined (__CYGWIN__)	/* Win 32 */
+ 
+ #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
+ 
+--- origsrc/dosbox-0.74/src/dos/cdrom_aspi_win32.cpp	2010-05-10 12:43:54.000000000 -0500
++++ src/dosbox-0.74/src/dos/cdrom_aspi_win32.cpp	2013-06-25 15:51:30.433492700 -0500
+@@ -18,7 +18,7 @@
+ 
+ /* $Id: cdrom_aspi_win32.cpp,v 1.21 2009-05-27 09:15:41 qbix79 Exp $ */
+ 
+-#if defined (WIN32)
++#if defined (WIN32) || defined (__CYGWIN__)
+ 
+ #include <ctype.h>
+ 
+@@ -33,6 +33,10 @@
+ #include <ntddcdrm.h>			// Ioctl stuff
+ #include <ntddscsi.h>
+ #include <winioctl.h>			// Ioctl stuff
++#elif defined(__MINGW64_VERSION_MAJOR)
++#include <winioctl.h>			// Ioctl stuff
++#include <ntddcdrm.h>			// Ioctl stuff
++#include <ntddscsi.h>
+ #else 
+ #include "ddk/ntddcdrm.h"		// Ioctl stuff
+ #include "ddk/ntddscsi.h"
+--- origsrc/dosbox-0.74/src/dos/cdrom_ioctl_win32.cpp	2010-05-10 12:43:54.000000000 -0500
++++ src/dosbox-0.74/src/dos/cdrom_ioctl_win32.cpp	2013-06-25 15:39:34.863564500 -0500
+@@ -18,7 +18,7 @@
+ 
+ /* $Id: cdrom_ioctl_win32.cpp,v 1.16 2009-01-07 22:39:18 c2woody Exp $ */
+ 
+-#if defined (WIN32)
++#if defined (WIN32) || defined (__CYGWIN__)
+ 
+ // *****************************************************************
+ // Windows IOCTL functions (not suitable for 95/98/Me)
+@@ -30,6 +30,8 @@
+ #if defined (_MSC_VER)
+ #include <ntddcdrm.h>			// Ioctl stuff
+ #include <winioctl.h>			// Ioctl stuff
++#elif defined (__MINGW64_VERSION_MAJOR)
++#include <ntddcdrm.h>			// Ioctl stuff
+ #else 
+ #include "ddk/ntddcdrm.h"		// Ioctl stuff
+ #endif
+--- origsrc/dosbox-0.74/src/dos/dos_mscdex.cpp	2010-05-10 12:43:54.000000000 -0500
++++ src/dosbox-0.74/src/dos/dos_mscdex.cpp	2013-06-25 15:36:27.832866900 -0500
+@@ -254,7 +254,7 @@ int CMscdex::AddDrive(Bit16u _drive, cha
+ 	switch (CDROM_GetMountType(physicalPath,forceCD)) {
+ 	case 0x00: {	
+ 		LOG(LOG_MISC,LOG_NORMAL)("MSCDEX: Mounting physical cdrom: %s"	,physicalPath);
+-#if defined (WIN32)
++#if defined (WIN32) || defined (__CYGWIN__)
+ 		// Check OS
+ 		OSVERSIONINFO osi;
+ 		osi.dwOSVersionInfoSize = sizeof(osi);
+--- origsrc/dosbox-0.74/src/dos/dos_programs.cpp	2010-05-10 12:43:54.000000000 -0500
++++ src/dosbox-0.74/src/dos/dos_programs.cpp	2013-06-25 15:47:20.600203100 -0500
+@@ -245,14 +245,14 @@ public:
+ 					MSCDEX_SetCDInterface(CDROM_USE_IOCTL_DIO, num);
+ 				} else if (cmd->FindExist("-ioctl_dx",false)) {
+ 					MSCDEX_SetCDInterface(CDROM_USE_IOCTL_DX, num);
+-#if defined (WIN32)
++#if defined (WIN32) || defined (__CYGWIN__)
+ 				} else if (cmd->FindExist("-ioctl_mci",false)) {
+ 					MSCDEX_SetCDInterface(CDROM_USE_IOCTL_MCI, num);
+ #endif
+ 				} else if (cmd->FindExist("-noioctl",false)) {
+ 					MSCDEX_SetCDInterface(CDROM_USE_SDL, num);
+ 				} else {
+-#if defined (WIN32)
++#if defined (WIN32) || defined (__CYGWIN__)
+ 					// Check OS
+ 					OSVERSIONINFO osi;
+ 					osi.dwOSVersionInfoSize = sizeof(osi);
+--- origsrc/dosbox-0.74/src/dos/drive_cache.cpp	2010-05-10 12:43:54.000000000 -0500
++++ src/dosbox-0.74/src/dos/drive_cache.cpp	2013-06-25 15:51:01.206821000 -0500
+@@ -28,7 +28,7 @@
+ #include <iterator>
+ #include <algorithm>
+ 
+-#if defined (WIN32)   /* Win 32 */
++#if defined (WIN32) || defined (__CYGWIN__)   /* Win 32 */
+ #define WIN32_LEAN_AND_MEAN        // Exclude rarely-used stuff from 
+ #include <windows.h>
+ #endif
+@@ -130,12 +130,12 @@ void DOS_Drive_Cache::SetBaseDir(const c
+ 		ReadDir(id,result);
+ 	};
+ 	// Get Volume Label
+-#if defined (WIN32) || defined (OS2)
++#if defined (WIN32) || defined (OS2) || defined (__CYGWIN__)
+ 	bool cdrom = false;
+ 	char labellocal[256]={ 0 };
+ 	char drive[4] = "C:\\";
+ 	drive[0] = basePath[0];
+-#if defined (WIN32)
++#if defined (WIN32) || defined (__CYGWIN__)
+ 	if (GetVolumeInformation(drive,labellocal,256,NULL,NULL,NULL,NULL,0)) {
+ 	UINT test = GetDriveType(drive);
+ 	if(test == DRIVE_CDROM) cdrom = true;
+@@ -180,7 +180,7 @@ char* DOS_Drive_Cache::GetExpandName(con
+ 
+ 	if (*work) {
+ 		size_t len = strlen(work);
+-#if defined (WIN32) 
++#if defined (WIN32) || defined (__CYGWIN__)
+ 		if((work[len-1] == CROSS_FILESPLIT ) && (len >= 2) && (work[len-2] != ':')) {
+ #else
+ 		if((len > 1) && (work[len-1] == CROSS_FILESPLIT )) {
+--- origsrc/dosbox-0.74/src/gui/midi.cpp	2010-05-10 12:43:54.000000000 -0500
++++ src/dosbox-0.74/src/gui/midi.cpp	2013-06-25 15:48:25.161895800 -0500
+@@ -82,7 +82,7 @@ MidiHandler Midi_none;
+ #include "midi_coremidi.h"
+ #include "midi_coreaudio.h"
+ 
+-#elif defined (WIN32)
++#elif defined (WIN32) || defined (__CYGWIN__)
+ 
+ #include "midi_win32.h"
+ 
+--- origsrc/dosbox-0.74/src/hardware/mixer.cpp	2010-05-10 12:43:54.000000000 -0500
++++ src/dosbox-0.74/src/hardware/mixer.cpp	2013-06-25 15:49:16.217816000 -0500
+@@ -27,7 +27,7 @@
+ #include <sys/types.h>
+ #include <math.h>
+ 
+-#if defined (WIN32)
++#if defined (WIN32) || defined (__CYGWIN__)
+ //Midi listing
+ #ifndef WIN32_LEAN_AND_MEAN
+ #define WIN32_LEAN_AND_MEAN
+@@ -578,7 +578,7 @@ private:
+ 	}
+ 
+ 	void ListMidi(){
+-#if defined (WIN32)
++#if defined (WIN32) || defined (__CYGWIN__)
+ 		unsigned int total = midiOutGetNumDevs();	
+ 		for(unsigned int i=0;i<total;i++) {
+ 			MIDIOUTCAPS mididev;
+--- origsrc/dosbox-0.74/src/hardware/serialport/libserial.cpp	2010-05-10 12:43:54.000000000 -0500
++++ src/dosbox-0.74/src/hardware/serialport/libserial.cpp	2013-06-25 15:08:46.418839500 -0500
+@@ -254,7 +254,7 @@ bool SERIAL_setCommParameters(COMPORT po
+ }
+ #endif
+ 
+-#if defined (LINUX) || defined (MACOSX) || defined (BSD)
++#if defined (LINUX) || defined (MACOSX) || defined (BSD) || defined (__CYGWIN__)
+ 
+ #include <string.h> // strlen
+ #include <stdlib.h>
