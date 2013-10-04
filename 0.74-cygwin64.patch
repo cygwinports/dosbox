@@ -1,0 +1,15 @@
+--- origsrc/dosbox-0.74/src/gui/midi_win32.h	2010-05-10 12:43:54.000000000 -0500
++++ src/dosbox-0.74/src/gui/midi_win32.h	2013-10-03 18:46:55.466227600 -0500
+@@ -48,10 +48,10 @@ public:
+ 				MIDIOUTCAPS mididev;
+ 				midiOutGetDevCaps(nummer, &mididev, sizeof(MIDIOUTCAPS));
+ 				LOG_MSG("MIDI:win32 selected %s",mididev.szPname);
+-				res = midiOutOpen(&m_out, nummer, (DWORD)m_event, 0, CALLBACK_EVENT);
++				res = midiOutOpen(&m_out, nummer, (DWORD_PTR)m_event, 0, CALLBACK_EVENT);
+ 			}
+ 		} else {
+-			res = midiOutOpen(&m_out, MIDI_MAPPER, (DWORD)m_event, 0, CALLBACK_EVENT);
++			res = midiOutOpen(&m_out, MIDI_MAPPER, (DWORD_PTR)m_event, 0, CALLBACK_EVENT);
+ 		}
+ 		if (res != MMSYSERR_NOERROR) return false;
+ 		isOpen=true;

@@ -6,7 +6,6 @@ SUMMARY="x86/DOS emulator"
 DESCRIPTION="DOSBox emulates an Intel x86 PC, complete with sound, graphics,
 mouse, joystick, modem, etc., necessary for running many old MS-DOS games that
 simply cannot be run on modern PCs and operating systems."
-
 HOMEPAGE="http://www.dosbox.com/"
 SRC_URI="
 	mirror://sourceforge/dosbox/dosbox-${VERSION}.tar.gz
@@ -18,6 +17,7 @@ PATCH_URI="
 	http://pkgs.fedoraproject.org/cgit/dosbox.git/plain/dosbox-0.74-gcc46.patch
 	http://pkgs.fedoraproject.org/cgit/dosbox.git/plain/dosbox-0.74-init-crash.patch
 	0.74-cygwin.patch
+	0.74-cygwin64.patch
 "
 
 CYGCONF_ARGS="--disable-alsa-midi"
