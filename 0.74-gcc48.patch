@@ -1,0 +1,15 @@
+Not sure why this suddenly become an issue:
+
+src/dos/dos_programs.cpp:929:11: error: missing expression between '(' and ')'
+
+--- origsrc/dosbox-0.74/src/dos/dos_programs.cpp	2015-01-20 21:24:38.540741300 -0600
++++ src/dosbox-0.74/src/dos/dos_programs.cpp	2015-01-20 21:32:35.115999800 -0600
+@@ -926,7 +926,7 @@ public:
+ 		/* Basic mounting has a version for each operating system.
+ 		 * This is done this way so both messages appear in the language file*/
+ 		WriteOut(MSG_Get("PROGRAM_INTRO_MOUNT_START"));
+-#if (WIN32)
++#if defined (WIN32)
+ 		WriteOut(MSG_Get("PROGRAM_INTRO_MOUNT_WINDOWS"));
+ #else			
+ 		WriteOut(MSG_Get("PROGRAM_INTRO_MOUNT_OTHER"));

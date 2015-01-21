@@ -1,6 +1,6 @@
 NAME="dosbox"
 VERSION=0.74
-RELEASE=1
+RELEASE=2
 CATEGORY="System"
 SUMMARY="x86/DOS emulator"
 DESCRIPTION="DOSBox emulates an Intel x86 PC, complete with sound, graphics,
@@ -16,8 +16,10 @@ SRC_URI="
 PATCH_URI="
 	http://pkgs.fedoraproject.org/cgit/dosbox.git/plain/dosbox-0.74-gcc46.patch
 	http://pkgs.fedoraproject.org/cgit/dosbox.git/plain/dosbox-0.74-init-crash.patch
+	http://pkgs.fedoraproject.org/cgit/dosbox.git/plain/dosbox-0.74-formatsecurity.patch
 	0.74-cygwin.patch
 	0.74-cygwin64.patch
+	0.74-gcc48.patch
 "
 
 CYGCONF_ARGS="--disable-alsa-midi"
